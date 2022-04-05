@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.annotation.SuppressLint;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.media.Image;
 import android.os.Bundle;
@@ -15,6 +16,7 @@ import android.widget.FrameLayout;
 import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -26,6 +28,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
+	private int count;
 
 	@SuppressLint("ClickableViewAccessibility")
 	@Override
@@ -49,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 						final GameModel gameModel = response.body();
 						Collections.shuffle(gameModel.cars);
 						Collections.shuffle(gameModel.cargos);
+						count = gameModel.cargos.size();
 
 						// теперь можно получить размеры игрового поля
 						final int containerWidth = container.getWidth();
@@ -59,9 +63,9 @@ public class MainActivity extends AppCompatActivity {
 
 						for (CarModel car : gameModel.cars) {
 							// создать imageView для машины
-							final ImageView image = new ImageView(MainActivity.this);
+							final ImageView view = new ImageView(MainActivity.this);
 
-							Glide.with(image).load("https://mya.su/" + car.source).into(image);
+							Glide.with(view).load("https://mya.su/" + car.source).into(view);
 
 							// создать параметры расположения (запомнить!)
 							FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
@@ -76,7 +80,10 @@ public class MainActivity extends AppCompatActivity {
 							nextY += containerHeight / gameModel.cars.size();
 
 							// добавляем машину на поле
-							container.addView(image, params);
+							container.addView(view, params);
+
+							// запоминаем в модели ее вьюху
+							car.view = view;
 						}
 
 						// начинаем опять сверху
@@ -102,17 +109,42 @@ public class MainActivity extends AppCompatActivity {
 							nextY += containerHeight / gameModel.cargos.size();
 
 							// установить обработчик нажатий для грузов
-							image.setOnTouchListener((v, e) -> {
-								// если нажали - поднять картинку над остальными
-								if (e.getAction() == MotionEvent.ACTION_DOWN) {
-									v.bringToFront();
+							image.setOnTouchListener(new View.OnTouchListener() {
+								@Override
+								public boolean onTouch(View view, MotionEvent motionEvent) {
+									// если нажали - поднять картинку над остальными
+									if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+										view.bringToFront();
+									}
+									// если тянут ...
+									if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
+										view.setX(view.getX() + motionEvent.getX() - view.getWidth() / 2f);
+										view.setY(view.getY() + motionEvent.getY() - view.getHeight() / 2f);
+									}
+									// если отпустили
+									if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+										// проверяем все машины
+										for (CarModel car : gameModel.cars) {
+											// если совпадают ид
+											if (car.id == cargo.id) {
+												// проверяем расстояния по иксам и игрекам что попали
+												final float dx = Math.abs(car.view.getX() - view.getX());
+												final float dy = Math.abs(car.view.getY() - view.getY());
+												if (dx < 50 && dy < 50) {
+													// если надо удалить
+													// container.removeView(car.view);
+													// container.removeView(view);
+													count--;
+													if (count == 0) {
+														Toast.makeText(MainActivity.this, "WIN!", Toast.LENGTH_SHORT).show();
+													}
+												}
+											}
+										}
+
+									}
+									return true;
 								}
-								// если тянут ...
-								if (e.getAction() == MotionEvent.ACTION_MOVE) {
-									v.setX(v.getX() + e.getX() - v.getWidth() / 2f);
-									v.setY(v.getY() + e.getY() - v.getHeight() / 2f);
-								}
-								return true;
 							});
 						}
 
