@@ -51,10 +51,11 @@ public class MainActivity extends AppCompatActivity {
 						Collections.shuffle(gameModel.cargos);
 
 						// теперь можно получить размеры игрового поля
+						final int containerWidth = container.getWidth();
 						final int containerHeight = container.getHeight();
 
 						// здесь считаем куда ставить следующую пару груз-машинка (это координата Y)
-						int nextY = 100;
+						int nextY = 50;
 
 						for (CarModel car : gameModel.cars) {
 							// создать imageView для машины
@@ -63,11 +64,12 @@ public class MainActivity extends AppCompatActivity {
 							Glide.with(image).load("https://mya.su/" + car.source).into(image);
 
 							// создать параметры расположения (запомнить!)
-							FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(250, 250);
+							FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+									containerWidth / 3, containerWidth / 3);
 							// устанавливаем верхний край
 							params.topMargin = nextY;
 							// машинки относительно правого края
-							params.rightMargin = 100;
+							params.rightMargin = 50;
 							params.gravity = Gravity.RIGHT;
 
 							// сразу посчитать координаты следующего ряда
@@ -78,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
 						}
 
 						// начинаем опять сверху
-						nextY = 100;
+						nextY = 50;
 
 						for (CargoModel cargo : gameModel.cargos) {
 							// создать imageView для груза
@@ -87,11 +89,12 @@ public class MainActivity extends AppCompatActivity {
 							Glide.with(image).load("https://mya.su/" + cargo.source).into(image);
 
 							// создать параметры расположения (запомнить!)
-							FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(250, 250);
+							FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+									containerWidth / 3, containerWidth / 3);
 							// устанавливаем верхний край
 							params.topMargin = nextY;
 							// грузы ставим по левому краю
-							params.leftMargin = 100;
+							params.leftMargin = 50;
 							// ставим на поле
 							container.addView(image, params);
 
