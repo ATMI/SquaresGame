@@ -131,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
 												final float dx = Math.abs(car.view.getX() - view.getX());
 												final float dy = Math.abs(car.view.getY() - view.getY());
 												if (dx < 50 && dy < 50) {
+													view.setOnTouchListener(null);
 													// если надо удалить
 													// container.removeView(car.view);
 													// container.removeView(view);
