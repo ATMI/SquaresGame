@@ -16,23 +16,16 @@ import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import com.bumptech.glide.Glide;
+
 import java.util.ArrayList;
+import java.util.Collections;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
-
-	static class GameItem {
-		public final int iconRes;
-
-		GameItem(int iconRes) {
-			this.iconRes = iconRes;
-		}
-	}
-
-	static final ArrayList<GameItem> items = new ArrayList<GameItem>() {{
-		add(new GameItem(R.drawable.ic_launcher_background));
-		add(new GameItem(R.drawable.ic_launcher_foreground));
-		add(new GameItem(R.drawable.ic_launcher_background));
-	}};
 
 	@SuppressLint("ClickableViewAccessibility")
 	@Override
@@ -50,55 +43,83 @@ public class MainActivity extends AppCompatActivity {
 				// !!! важно выполнить этот код только один раз - поэтому сразу убираем обработчик
 				container.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
-				// теперь можно получить размеры игрового поля
-				final int containerWidth = container.getWidth();
-				final int containerHeight = container.getHeight();
+				Api.Api.getCarGame("Cars").enqueue(new Callback<GameModel>() {
+					@Override
+					public void onResponse(Call<GameModel> call, Response<GameModel> response) {
+						final GameModel gameModel = response.body();
+						Collections.shuffle(gameModel.cars);
+						Collections.shuffle(gameModel.cargos);
 
-				// здесь считаем куда ставить следующую пару груз-машинка (это координата Y)
-				int nextY = 50;
+						// теперь можно получить размеры игрового поля
+						final int containerHeight = container.getHeight();
 
-				for (GameItem item : items) {
-					// создать imageView для груза и машины
-					final ImageView cargo = new ImageView(MainActivity.this);
-					final ImageView lorry = new ImageView(MainActivity.this);
+						// здесь считаем куда ставить следующую пару груз-машинка (это координата Y)
+						int nextY = 100;
 
-					// todo: load with glide
-					cargo.setImageResource(item.iconRes);
-					lorry.setImageResource(item.iconRes);
+						for (CarModel car : gameModel.cars) {
+							// создать imageView для машины
+							final ImageView image = new ImageView(MainActivity.this);
 
-					// создать параметры расположения (запомнить!)
-					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-							FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+							Glide.with(image).load("https://mya.su/" + car.source).into(image);
 
-					// устанавливаем верхний край
-					params.topMargin = nextY;
-					// сразу посчитать координаты следующего ряда
-					nextY += containerHeight / items.size();
+							// создать параметры расположения (запомнить!)
+							FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(250, 250);
+							// устанавливаем верхний край
+							params.topMargin = nextY;
+							// машинки относительно правого края
+							params.rightMargin = 100;
+							params.gravity = Gravity.RIGHT;
 
-					// грузы ставим по левому краю
-					params.leftMargin = 50;
-					container.addView(cargo, params);
-					// создаем новые параметры на основе предыдущих
-					params = new FrameLayout.LayoutParams(params);
-					// машинки относительно правого края
-					params.rightMargin = 50;
-					params.gravity = Gravity.RIGHT;
-					container.addView(lorry, params);
+							// сразу посчитать координаты следующего ряда
+							nextY += containerHeight / gameModel.cars.size();
 
-					// установить обработчик нажатий для грузов
-					cargo.setOnTouchListener((v, e) -> {
-						// если нажали - поднять картинку над остальными
-						if (e.getAction() == MotionEvent.ACTION_DOWN) {
-							v.bringToFront();
+							// добавляем машину на поле
+							container.addView(image, params);
 						}
-						// если тянут ...
-						if (e.getAction() == MotionEvent.ACTION_MOVE) {
-							v.setX(v.getX() + e.getX() - v.getWidth() / 2f);
-							v.setY(v.getY() + e.getY() - v.getHeight() / 2f);
+
+						// начинаем опять сверху
+						nextY = 100;
+
+						for (CargoModel cargo : gameModel.cargos) {
+							// создать imageView для груза
+							final ImageView image = new ImageView(MainActivity.this);
+
+							Glide.with(image).load("https://mya.su/" + cargo.source).into(image);
+
+							// создать параметры расположения (запомнить!)
+							FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(250, 250);
+							// устанавливаем верхний край
+							params.topMargin = nextY;
+							// грузы ставим по левому краю
+							params.leftMargin = 100;
+							// ставим на поле
+							container.addView(image, params);
+
+							// сразу посчитать координаты следующего ряда
+							nextY += containerHeight / gameModel.cargos.size();
+
+							// установить обработчик нажатий для грузов
+							image.setOnTouchListener((v, e) -> {
+								// если нажали - поднять картинку над остальными
+								if (e.getAction() == MotionEvent.ACTION_DOWN) {
+									v.bringToFront();
+								}
+								// если тянут ...
+								if (e.getAction() == MotionEvent.ACTION_MOVE) {
+									v.setX(v.getX() + e.getX() - v.getWidth() / 2f);
+									v.setY(v.getY() + e.getY() - v.getHeight() / 2f);
+								}
+								return true;
+							});
 						}
-						return true;
-					});
-				}
+
+					}
+
+					@Override
+					public void onFailure(Call<GameModel> call, Throwable t) {
+						int a = 0;
+					}
+				});
 
 			}
 		});
