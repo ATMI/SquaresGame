@@ -1,31 +1,26 @@
 package su.mya.squaresgame;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.media.Image;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.GridLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
 	static class GameItem {
-/*
-		todo: url + glide
-		public final String iconRes;
-
-		GameItem(String iconRes) {
-			this.iconRes = iconRes;
-		}
-*/
-
 		public final int iconRes;
 
 		GameItem(int iconRes) {
@@ -45,27 +40,68 @@ public class MainActivity extends AppCompatActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		final GridLayout container = findViewById(R.id.container);
+		// найти игровое поле
+		final FrameLayout container = findViewById(R.id.container);
 
-		for (GameItem item : items) {
-			final GridLayout.LayoutParams params = new GridLayout.LayoutParams(
-					GridLayout.spec(GridLayout.UNDEFINED, GridLayout.FILL, 1.f),
-					GridLayout.spec(GridLayout.UNDEFINED, GridLayout.FILL, 1.f)
-			);
+		// установить событие, когда размеры станут известны
+		container.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+			@Override
+			public void onGlobalLayout() {
+				// !!! важно выполнить этот код только один раз - поэтому сразу убираем обработчик
+				container.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
-			final ImageView imageView = new ImageView(this);
-			// todo: load with glide
-			imageView.setImageResource(item.iconRes);
-			// todo: touch listener
-			// imageView.setOnTouchListener(null);
-			imageView.setOnTouchListener((v, e) -> {
-				if (MotionEvent.ACTION_MOVE == e.getAction()) {
-					v.setX(v.getX() + 1);
-					v.setY(v.getY() + 1);
+				// теперь можно получить размеры игрового поля
+				final int containerWidth = container.getWidth();
+				final int containerHeight = container.getHeight();
+
+				// здесь считаем куда ставить следующую пару груз-машинка (это координата Y)
+				int nextY = 50;
+
+				for (GameItem item : items) {
+					// создать imageView для груза и машины
+					final ImageView cargo = new ImageView(MainActivity.this);
+					final ImageView lorry = new ImageView(MainActivity.this);
+
+					// todo: load with glide
+					cargo.setImageResource(item.iconRes);
+					lorry.setImageResource(item.iconRes);
+
+					// создать параметры расположения (запомнить!)
+					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+							FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+
+					// устанавливаем верхний край
+					params.topMargin = nextY;
+					// сразу посчитать координаты следующего ряда
+					nextY += containerHeight / items.size();
+
+					// грузы ставим по левому краю
+					params.leftMargin = 50;
+					container.addView(cargo, params);
+					// создаем новые параметры на основе предыдущих
+					params = new FrameLayout.LayoutParams(params);
+					// машинки относительно правого края
+					params.rightMargin = 50;
+					params.gravity = Gravity.RIGHT;
+					container.addView(lorry, params);
+
+					// установить обработчик нажатий для грузов
+					cargo.setOnTouchListener((v, e) -> {
+						// если нажали - поднять картинку над остальными
+						if (e.getAction() == MotionEvent.ACTION_DOWN) {
+							v.bringToFront();
+						}
+						// если тянут ...
+						if (e.getAction() == MotionEvent.ACTION_MOVE) {
+							v.setX(v.getX() + e.getX() - v.getWidth() / 2f);
+							v.setY(v.getY() + e.getY() - v.getHeight() / 2f);
+						}
+						return true;
+					});
 				}
-				return true;
-			});
-			container.addView(imageView, params);
-		}
+
+			}
+		});
+
 	}
 }
